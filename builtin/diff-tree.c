@@ -111,6 +111,7 @@ int cmd_diff_tree(int argc, const char **argv, const char *prefix)
 	struct setup_revision_opt s_r_opt;
 	struct userformat_want w;
 	int read_stdin = 0;
+	int merge_base = 0;
 
 	if (argc == 2 && !strcmp(argv[1], "-h"))
 		usage(diff_tree_usage);
@@ -143,7 +144,24 @@ int cmd_diff_tree(int argc, const char **argv, const char *prefix)
 			read_stdin = 1;
 			continue;
 		}
+		if (!strcmp(arg, "--merge-base")) {
+			merge_base = 1;
+			continue;
+		}
 		usage(diff_tree_usage);
+	}
+
+	if (read_stdin && merge_base)
+		die(_("--stdin and --merge-base are mutually exclusive"));
+
+	if (merge_base) {
+		struct object_id oid;
+
+		if (opt->pending.nr != 2)
+			die(_("--merge-base only works with two commits"));
+
+		diff_get_merge_base(opt, &oid);
+		opt->pending.objects[0].item = lookup_object(the_repository, &oid);
 	}
 
 	/*
